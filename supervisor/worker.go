@@ -2,16 +2,9 @@ package supervisor
 
 import (
 	"bytes"
-	"fmt"
 	"os/exec"
 	"syscall"
 )
-
-// WorkerProcess ..
-type WorkerProcess interface {
-	start(crashed chan *worker, completed chan struct{})
-	stop(crashed chan *worker, completed chan struct{})
-}
 
 // worker is just an abstraction over a unix command.
 type worker struct {
@@ -52,14 +45,12 @@ func (w *worker) start(crashed chan *worker, completed chan struct{}) {
 
 	err := w.command.Start()
 	if err != nil {
-		fmt.Println("exec => ", err)
 		// return early since the command couldn't start it is possible
 		// that the binary doesn't exist so we don't consider this a crash
 		completed <- struct{}{}
 		return
 	}
 	w.running <- struct{}{}
-	fmt.Println(w.command.Path, " started ", w.command.Process.Pid)
 
 	// wait for the process to complete
 	err = w.command.Wait()
@@ -69,7 +60,6 @@ func (w *worker) start(crashed chan *worker, completed chan struct{}) {
 		if w.restartToggle {
 			crashed <- w
 		}
-		fmt.Println("wait=> ", err)
 		return
 	}
 	w.stdout = outbuf.String()
@@ -85,11 +75,9 @@ func (w *worker) stop(completed chan struct{}) {
 	// See: https://stackoverflow.com/questions/22470193/why-wont-go-kill-a-child-process-correctly#29552044
 	pgid, err := syscall.Getpgid(w.command.Process.Pid)
 	if err != nil {
-		fmt.Println(w.command.Path, " can't kill ", err)
 		return
 	}
 	syscall.Kill(-pgid, 15)
-	fmt.Println(" KILLED ", w.command.Path)
 	// since it was stopped by the user and not crashed we
 	// disable restarts for this worker
 	w.restartToggle = false

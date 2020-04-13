@@ -38,7 +38,7 @@ func TestSupervisor(t *testing.T) {
 	// delay to make sure all the processes have started
 	time.Sleep(1 * time.Second)
 
-	for _, child := range sup.GetChildren() {
+	for _, child := range sup.getChildren() {
 		proc := child.process
 		if proc.Executable == "sleep" && proc.Args[0] == testProcesses[2].Args[0] {
 			syscall.Kill(-child.command.Process.Pid, 15)

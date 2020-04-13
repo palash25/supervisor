@@ -59,10 +59,8 @@ func (s *Supervisor) StartProcesses() chan struct{} {
 	signal.Notify(s.trap, os.Interrupt, os.Kill)
 	go func() {
 		<-s.trap
-		fmt.Println("received kill signal")
 		// kill all the child processes before killing the parent
 		s.StopProcesses()
-		fmt.Println("killed all")
 		os.Exit(1)
 	}()
 
@@ -85,7 +83,6 @@ func (s *Supervisor) StartProcesses() chan struct{} {
 			case worker := <-s.crashed:
 				s.restartProcess(worker)
 			case <-s.quit:
-				fmt.Println("quit")
 				done <- struct{}{}
 				close(s.completed)
 				close(s.crashed)
@@ -98,7 +95,6 @@ func (s *Supervisor) StartProcesses() chan struct{} {
 
 // StopProcesses can be used to stop all the child processes.
 func (s *Supervisor) StopProcesses() {
-	fmt.Println(len(s.children))
 	for _, child := range s.children {
 		child.stop(s.completed)
 	}
@@ -136,13 +132,14 @@ func (s *Supervisor) ReadStdErr() map[string]string {
 
 // restart worker in case of a crash
 func (s *Supervisor) restartProcess(proc *worker) {
-	fmt.Println("restarting ", proc.command.Path)
 	// record the crash
 	s.crashes++
 	for index, child := range s.children {
 		if proc == child {
-			fmt.Println(proc.restarts)
 			if proc.restarts > s.maxRestarts {
+				// for debugging
+				fmt.Println("max restart limit reached")
+
 				// maximum threshold for restarts reached, we therefore
 				// consider this process terminated.
 				s.completed <- struct{}{}
@@ -151,19 +148,32 @@ func (s *Supervisor) restartProcess(proc *worker) {
 			// replace the old worker with the new one
 			s.children[index] = newWorker(proc.process, proc.restarts+1)
 			go s.children[index].start(s.crashed, s.completed)
+			// for debugging
+			fmt.Println("restarted ", proc.process.Executable)
 			return
 		}
 	}
 }
 
+// GetSuccessfullProcess returns number of successfull/terminated processes
 func (s *Supervisor) GetSuccessfullProcess() int {
 	return s.successfull
 }
 
+// GetCrashedProcesses returns number of crashed processes
 func (s *Supervisor) GetCrashedProcesses() int {
 	return s.crashes
 }
 
-func (s *Supervisor) GetChildren() []*worker {
+// GetPIDs returns a map of processes and their PIDs
+func (s *Supervisor) GetPIDs() map[string]int {
+	result := make(map[string]int)
+	for _, child := range s.children {
+		result[child.process.Executable] = child.command.Process.Pid
+	}
+	return result
+}
+
+func (s *Supervisor) getChildren() []*worker {
 	return s.children
 }

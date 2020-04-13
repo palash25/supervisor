@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"syscall"
+	"time"
 
 	"github.com/palash25/supervisor/supervisor"
 )
@@ -20,7 +21,7 @@ func main() {
 		},
 		{
 			Executable: "sleep",
-			Args:       []string{"5"},
+			Args:       []string{"10"},
 			Env:        nil,
 		},
 	}
@@ -28,13 +29,19 @@ func main() {
 	sup := supervisor.New(processes, 2)
 	done := sup.StartProcesses()
 
-	//time.Sleep(5 * time.Second)
-	//fmt.Println(sup.ReadProcessStdErr(processes[4]))
-	//fmt.Println(sup.ReadProcessStdOut(processes[4]))
+	// short delay to ensure that all the processes have started
+	time.Sleep(2 * time.Second)
 
-	//time.Sleep(5 * time.Second)
-	//sup.StopProcesses()
+	pids := sup.GetPIDs()
+	// cause a crash to simulate a restart
+	_ = syscall.Kill(-pids["sleep"], 15) // get a print statement saying "restarted"
+
+	// short delay to let the crashed process restart before stopping
+	time.Sleep(1 * time.Second)
+	// stop all running processes
+	sup.StopProcesses()
 
 	<-done
-	fmt.Println("starting all procs")
+	//fmt.Println(sup.ReadStdErr())
+	//fmt.Println(sup.ReadStdOut())
 }
