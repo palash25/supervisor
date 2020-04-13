@@ -109,7 +109,11 @@ func (s *Supervisor) ReadStdOut() map[string]string {
 	result := make(map[string]string)
 	for _, child := range s.children {
 		if child.stdout != "" {
-			result[child.command.String()] = child.stdout
+			if _, ok := result[child.process.Executable]; !ok {
+				result[child.process.Executable] = child.stdout
+				continue
+			}
+			result[child.process.Executable] += child.stdout
 		}
 	}
 	return result
@@ -120,7 +124,11 @@ func (s *Supervisor) ReadStdErr() map[string]string {
 	result := make(map[string]string)
 	for _, child := range s.children {
 		if child.stderr != "" {
-			result[child.command.String()] = child.stderr
+			if _, ok := result[child.process.Executable]; !ok {
+				result[child.process.Executable] = child.stderr
+				continue
+			}
+			result[child.process.Executable] += child.stderr
 		}
 	}
 	return result
