@@ -1,5 +1,5 @@
 # supervisor
-Supervisor lets you start up a bunch of processes concurrently, stop them, restart them in case they fail or a killed by some other program and read their stdout and stderr. This is the submission for PerconaDB Backend Engineer Assignment.
+Supervisor lets you start up a bunch of processes concurrently, stop them, restart them in case they fail or a killed by some other program and read their stdout and stderr. This is the submission for Percona Backend Engineer Assignment.
 
 [![Build Status](https://img.shields.io/travis/coredns/coredns/master.svg?label=build)](https://travis-ci.org/palash25/supervisor)
 [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/palash25/supervisor/supervisor)
